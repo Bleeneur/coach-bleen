@@ -1,0 +1,31 @@
+﻿# Liste produits Docteur Gazon (exemples — remplace par tes vraies fiches)
+- sku: GT-1L
+  nom: Green Tonic
+  type: engrais_liquide
+  dose_g_m2: 22          # dose moyenne g/m²
+  fenetre: ["printemps","été"]
+  meteo: "éviter canicule/orage <6h"
+  securite: "tenir enfants/animaux hors zone jusqu’au séchage"
+  compatibilites:
+    - regarnissage_apres_jours: 7
+  notes: "boost reverdissement"
+
+- sku: MV-5KG
+  nom: Multivitaminé Pelouse
+  type: engrais_granule
+  dose_g_m2: 25
+  fenetre: ["printemps","automne"]
+  meteo: "éviter gel/canicule"
+  securite: "suivre tableau doses; arrosage léger après"
+  compatibilites: []
+  notes: "nutrition complète saison"
+
+- sku: RPR-10KG
+  nom: Semences RPR
+  type: semence
+  densite_g_m2: 30
+  fenetre: ["printemps","automne"]
+  meteo: "maintenir substrat humide 10–14j"
+  securite: "OK enfants/animaux"
+  compatibilites: []
+  notes: "regarnissage résistant"
