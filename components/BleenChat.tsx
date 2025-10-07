@@ -132,12 +132,6 @@ export default function DocteurGazonChat() {
     }
   }
 
-  const quick = [
-    "Ma pelouse jaunit après la chaleur",
-    "Programme annuel engrais + semences",
-    "Comment éliminer la mousse ?",
-    "Arrosage intelligent (ville + surface)",
-  ];
 
   return (
     <div className="fixed bottom-4 right-4 z-50">
@@ -181,20 +175,7 @@ export default function DocteurGazonChat() {
             {loading && <div className="text-sm opacity-70">Docteur Gazon écrit…</div>}
           </div>
 
-          <div className="px-4 pb-2 flex flex-wrap gap-2">
-            {quick.map((q) => (
-              <button
-                key={q}
-                onClick={() => {
-                  setInput(q);
-                  setTimeout(send, 10);
-                }}
-                className="text-sm px-3 py-1 rounded-full border border-emerald-600 text-emerald-700 dark:border-emerald-400 dark:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 transition"
-              >
-                {q}
-              </button>
-            ))}
-          </div>
+
 
           <div className="p-3 border-t border-neutral-200 dark:border-neutral-700 flex gap-2">
             <input
