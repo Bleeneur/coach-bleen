@@ -21,7 +21,11 @@ export default function DocteurGazonChat() {
   ]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
-  const [profile, setProfile] = useState<Profile>({ isClient: null, city: "", askedProfile: false });
+  const [profile, setProfile] = useState<Profile>({
+    isClient: null,
+    city: "",
+    askedProfile: false,
+  });
 
   // ——— Persistance messages + profil ———
   useEffect(() => {
@@ -72,27 +76,38 @@ export default function DocteurGazonChat() {
     }
   }
 
-  // ——— NE pose la question client+ville que si l’IA ne l’a pas déjà posée ———
+  // ——— Anti-doublon : ne reposer la question que si elle manque ET pas déjà posée récemment ———
+  function hasRecentlyAsked(msgs: Msg[], maxBack = 6) {
+    const recent = msgs.slice(-maxBack).filter((m) => m.role === "assistant");
+    const reClient = /client\s+bleen/i;
+    const reVille = /(ville|région)/i;
+    return recent.some((m) => reClient.test(m.content) && reVille.test(m.content));
+  }
+
   function maybeAskProfile(assistantContent?: string) {
-    const askedByAI =
+    // si on a déjà les infos, on ne demande rien
+    if (profile.isClient !== null && profile.city) return;
+
+    // si l’IA vient de le demander dans cette réponse
+    const askedByThisAI =
       !!assistantContent &&
       /client\s+bleen/i.test(assistantContent) &&
       /(ville|région)/i.test(assistantContent);
+    if (askedByThisAI) return;
 
-    if (askedByAI) return;
+    // si posé récemment par l’IA dans les derniers messages
+    if (hasRecentlyAsked(messages, 6)) return;
 
-    if (!profile.askedProfile && (profile.isClient === null || !profile.city)) {
-      setMessages((m) => [
-        ...m,
-        {
-          id: crypto.randomUUID(),
-          role: "assistant",
-          content:
-            "Petite question pour affiner 👇\n\n1) Es-tu **déjà client Bleen** ?\n2) Tu es **dans quelle ville** ?\n\nÇa m’aide à ajuster les doses, le timing et les conseils météo.",
-        },
-      ]);
-      setProfile((p) => ({ ...p, askedProfile: true }));
-    }
+    // sinon, on demande une seule fois
+    setMessages((m) => [
+      ...m,
+      {
+        id: crypto.randomUUID(),
+        role: "assistant",
+        content:
+          "Petite question pour affiner 👇\n\n1) Es-tu **déjà client Bleen** ?\n2) Tu es **dans quelle ville** ?\n\nÇa m’aide à ajuster les doses, le timing et les conseils météo.",
+      },
+    ]);
   }
 
   // ——— Envoi ———
@@ -120,7 +135,7 @@ export default function DocteurGazonChat() {
       };
       setMessages((m) => [...m, assistantMsg]);
 
-      // ✅ On ne relance la question client+ville que si l’IA ne l’a pas déjà posée
+      // ✅ Relance seulement si info manquante ET pas déjà posée (dans cette réponse ou récemment)
       setTimeout(() => maybeAskProfile(assistantMsg.content), 50);
     } catch (e: any) {
       setMessages((m) => [
@@ -131,7 +146,6 @@ export default function DocteurGazonChat() {
       setLoading(false);
     }
   }
-
 
   return (
     <div className="fixed bottom-4 right-4 z-50">
@@ -174,8 +188,6 @@ export default function DocteurGazonChat() {
             ))}
             {loading && <div className="text-sm opacity-70">Docteur Gazon écrit…</div>}
           </div>
-
-
 
           <div className="p-3 border-t border-neutral-200 dark:border-neutral-700 flex gap-2">
             <input
