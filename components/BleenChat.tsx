@@ -72,7 +72,15 @@ export default function DocteurGazonChat() {
     }
   }
 
-  function maybeAskProfile() {
+  // ——— NE pose la question client+ville que si l’IA ne l’a pas déjà posée ———
+  function maybeAskProfile(assistantContent?: string) {
+    const askedByAI =
+      !!assistantContent &&
+      /client\s+bleen/i.test(assistantContent) &&
+      /(ville|région)/i.test(assistantContent);
+
+    if (askedByAI) return;
+
     if (!profile.askedProfile && (profile.isClient === null || !profile.city)) {
       setMessages((m) => [
         ...m,
@@ -111,7 +119,9 @@ export default function DocteurGazonChat() {
         content: r.ok ? data.reply ?? "Désolé, je n’ai pas pu répondre." : `❌ ${data?.error || "Erreur inconnue"}`,
       };
       setMessages((m) => [...m, assistantMsg]);
-      setTimeout(maybeAskProfile, 50);
+
+      // ✅ On ne relance la question client+ville que si l’IA ne l’a pas déjà posée
+      setTimeout(() => maybeAskProfile(assistantMsg.content), 50);
     } catch (e: any) {
       setMessages((m) => [
         ...m,
@@ -141,9 +151,15 @@ export default function DocteurGazonChat() {
       ) : (
         <div className="w-96 h-[640px] bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 shadow-2xl rounded-2xl flex flex-col border border-neutral-200 dark:border-neutral-700">
           <div className="p-4 border-b border-neutral-200 dark:border-neutral-700 flex items-center gap-3 bg-[var(--bleen-50)] dark:bg-emerald-900/20">
-            <img src="/docteur-gazon.png" alt="Docteur Gazon" className="w-10 h-10 rounded-full border border-neutral-200 dark:border-neutral-700" />
+            <img
+              src="/docteur-gazon.png"
+              alt="Docteur Gazon"
+              className="w-10 h-10 rounded-full border border-neutral-200 dark:border-neutral-700"
+            />
             <div className="font-semibold">Docteur Gazon</div>
-            <button onClick={() => setOpen(false)} className="ml-auto opacity-60 hover:opacity-100">✕</button>
+            <button onClick={() => setOpen(false)} className="ml-auto opacity-60 hover:opacity-100">
+              ✕
+            </button>
           </div>
 
           <div className="flex-1 overflow-auto p-4 space-y-3">
