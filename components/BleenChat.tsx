@@ -16,7 +16,7 @@ export default function DocteurGazonChat() {
       id: crypto.randomUUID(),
       role: "assistant",
       content:
-        'Hello 🧑‍🌾, Enchanté ! Je me présente, je suis ton coach jardin et je vais t’accompagner tout au long de la saison. Comment puis-je t’aider ?',
+        "Hello 🧑‍🌾, Enchanté ! Je me présente, je suis ton coach jardin et je vais t’accompagner tout au long de la saison. Comment puis-je t’aider ?",
     },
   ]);
   const [input, setInput] = useState("");
@@ -76,8 +76,8 @@ export default function DocteurGazonChat() {
     }
   }
 
-  // ——— Anti-doublon : ne reposer la question que si elle manque ET pas déjà posée récemment ———
-  function hasRecentlyAsked(msgs: Msg[], maxBack = 6) {
+  // ——— Anti-doublon : question client+ville seulement si info manquante & pas déjà posée ———
+  function hasRecentlyAskedClientVille(msgs: Msg[], maxBack = 6) {
     const recent = msgs.slice(-maxBack).filter((m) => m.role === "assistant");
     const reClient = /client\s+bleen/i;
     const reVille = /(ville|région)/i;
@@ -85,20 +85,16 @@ export default function DocteurGazonChat() {
   }
 
   function maybeAskProfile(assistantContent?: string) {
-    // si on a déjà les infos, on ne demande rien
     if (profile.isClient !== null && profile.city) return;
 
-    // si l’IA vient de le demander dans cette réponse
     const askedByThisAI =
       !!assistantContent &&
       /client\s+bleen/i.test(assistantContent) &&
       /(ville|région)/i.test(assistantContent);
     if (askedByThisAI) return;
 
-    // si posé récemment par l’IA dans les derniers messages
-    if (hasRecentlyAsked(messages, 6)) return;
+    if (hasRecentlyAskedClientVille(messages, 6)) return;
 
-    // sinon, on demande une seule fois
     setMessages((m) => [
       ...m,
       {
@@ -108,6 +104,47 @@ export default function DocteurGazonChat() {
           "Petite question pour affiner 👇\n\n1) Es-tu **déjà client Bleen** ?\n2) Tu es **dans quelle ville** ?\n\nÇa m’aide à ajuster les doses, le timing et les conseils météo.",
       },
     ]);
+  }
+
+  // ——— Relance “diagnostic/stock” quand l’utilisateur parle de pelouse/gazon ———
+  function hasRecentNurture(msgs: Msg[], maxBack = 6) {
+    const recent = msgs.slice(-maxBack).filter((m) => m.role === "assistant");
+    return recent.some(
+      (m) =>
+        /diagnostic personnalisé/i.test(m.content) ||
+        /qu'as-tu fait.*cette saison/i.test(m.content) ||
+        /quels produits.*reste/i.test(m.content)
+    );
+  }
+
+  function maybeNurtureForLawn(userText: string) {
+    const talksLawn = /(pelouse|gazon)/i.test(userText);
+    if (!talksLawn) return;
+    if (hasRecentNurture(messages, 6)) return;
+
+    if (profile.isClient === false) {
+      // Pas client → proposer le diagnostic
+      setMessages((m) => [
+        ...m,
+        {
+          id: crypto.randomUUID(),
+          role: "assistant",
+          content:
+            "Tu peux faire ton **diagnostic personnalisé** en 2 minutes ici 👉 [mybleen.com/pages/mon-gazon](https://mybleen.com/pages/mon-gazon). Ça me donnera tes conditions exactes et je pourrai te guider avec des doses précises.",
+        },
+      ]);
+    } else if (profile.isClient === true) {
+      // Déjà client → demander ce qui a été fait + stock
+      setMessages((m) => [
+        ...m,
+        {
+          id: crypto.randomUUID(),
+          role: "assistant",
+          content:
+            "Top 👌 Comme tu es déjà client, dis-moi **ce que tu as fait depuis le début de la saison** (scarification, engrais, semis, arrosage…) et **quels produits il te reste en stock**. Je t’organise les prochaines étapes.",
+        },
+      ]);
+    }
   }
 
   // ——— Envoi ———
@@ -135,8 +172,10 @@ export default function DocteurGazonChat() {
       };
       setMessages((m) => [...m, assistantMsg]);
 
-      // ✅ Relance seulement si info manquante ET pas déjà posée (dans cette réponse ou récemment)
-      setTimeout(() => maybeAskProfile(assistantMsg.content), 50);
+      // 1) Relance client+ville (si utile, pas déjà posée)
+      setTimeout(() => maybeAskProfile(assistantMsg.content), 30);
+      // 2) Relance “diagnostic/stock” selon le statut si l’utilisateur parle de pelouse/gazon
+      setTimeout(() => maybeNurtureForLawn(userText), 60);
     } catch (e: any) {
       setMessages((m) => [
         ...m,
